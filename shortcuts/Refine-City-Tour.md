@@ -1,7 +1,7 @@
 # Shortcut: Refine City Tour
 
 Reads the saved `session_id`, prompts for a follow-up instruction, calls
-`POST BACKEND/refine`, and opens the updated route.
+`POST https://city-explorer-t9oj.onrender.com/refine`, and opens the updated route.
 
 ## Setup
 
@@ -25,7 +25,7 @@ Reads the saved `session_id`, prompts for a follow-up instruction, calls
    - `instruction` -> `Provided Input`
 
 4. **Get Contents of URL**
-   - URL: `BACKEND/refine`
+   - URL: `https://city-explorer-t9oj.onrender.com/refine`
    - Method: `POST`
    - Request Body: `JSON` -> Dictionary from step 3
    - Headers: `Content-Type` = `application/json`

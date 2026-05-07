@@ -104,7 +104,9 @@ async def _overpass_search(
     for f in filters:
         parts.append(f"node[{f}](around:{radius_m},{lat},{lng});")
         parts.append(f"way[{f}](around:{radius_m},{lat},{lng});")
-    body = f"[out:json][timeout:25];({''.join(parts)});out center tags {limit * 4};"
+    # Overpass QL expects the element limit directly after `out` and before
+    # output modifiers. `out center tags 48;` is invalid and returns no data.
+    body = f"[out:json][timeout:25];({''.join(parts)});out tags center {limit * 4};"
 
     try:
         async with httpx.AsyncClient(timeout=30) as client:
@@ -112,7 +114,7 @@ async def _overpass_search(
             resp.raise_for_status()
             payload = resp.json()
     except Exception as exc:
-        logger.warning("Overpass query failed: %s", exc)
+        logger.warning("Overpass query failed for category=%s: %s", category, exc)
         return []
 
     places: list[Place] = []
