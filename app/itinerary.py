@@ -106,8 +106,8 @@ def _fit_stops_to_available_time(intent: IntentPlan) -> IntentPlan:
     per_stop = 75 if intent.travel_mode == "walking" else 60
     transfer = 15 if intent.travel_mode == "walking" else 10
     estimated = max(2, min(12, round(intent.available_minutes / (per_stop + transfer))))
-    max_stops = max(estimated, slots_count)
     slots_count = len(intent.slots)
+    max_stops = max(estimated, slots_count)
     free_slots = max(0, max_stops - slots_count)
     return intent.model_copy(
         update={
