@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 NOMINATIM_SEARCH = "https://nominatim.openstreetmap.org/search"
 NOMINATIM_REVERSE = "https://nominatim.openstreetmap.org/reverse"
 NOMINATIM_UA = "city-explorer/0.1 (+https://github.com/skethini/city_explorer)"
+OPEN_METEO_GEOCODE = "https://geocoding-api.open-meteo.com/v1/search"
 
 async def infer_city_name(lat: float, lng: float) -> str:
     """Infer city name from coordinates."""
@@ -128,9 +129,26 @@ async def geocode_city_center(city: str) -> tuple[float, float] | None:
                 if rows:
                     break
         if not rows:
-            return None
+            raise ValueError("No Nominatim rows")
         row = rows[0]
         return float(row["lat"]), float(row["lon"])
     except Exception as exc:
-        logger.warning("Failed to geocode city '%s': %s", city, exc)
+        logger.warning("Nominatim city geocoding failed for '%s': %s", city, exc)
+
+    # Secondary non-hardcoded fallback provider.
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(
+                OPEN_METEO_GEOCODE,
+                params={"name": city, "count": 1, "language": "en", "format": "json"},
+            )
+            resp.raise_for_status()
+            payload = resp.json()
+            results = payload.get("results") or []
+            if not results:
+                return None
+            row = results[0]
+            return float(row["latitude"]), float(row["longitude"])
+    except Exception as exc:
+        logger.warning("Open-Meteo city geocoding failed for '%s': %s", city, exc)
         return None
