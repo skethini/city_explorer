@@ -1,4 +1,4 @@
-"""Curated walkable attraction recommendations (LLM-first, fallback list)."""
+"""Curated walkable attraction recommendations (LLM-first)."""
 
 from __future__ import annotations
 
@@ -16,22 +16,6 @@ logger = logging.getLogger(__name__)
 NOMINATIM_SEARCH = "https://nominatim.openstreetmap.org/search"
 NOMINATIM_REVERSE = "https://nominatim.openstreetmap.org/reverse"
 NOMINATIM_UA = "city-explorer/0.1 (+https://github.com/skethini/city_explorer)"
-
-MADRID_FALLBACK = [
-    "Puerta del Sol",
-    "Plaza Mayor",
-    "Royal Palace of Madrid",
-    "Almudena Cathedral",
-    "Mercado de San Miguel",
-    "Gran Via",
-    "Plaza de Cibeles",
-    "Retiro Park",
-    "Prado Museum",
-    "Thyssen-Bornemisza Museum",
-    "Reina Sofia Museum",
-    "Temple of Debod",
-]
-
 
 async def infer_city_name(lat: float, lng: float) -> str:
     """Infer city name from coordinates."""
@@ -65,7 +49,7 @@ async def recommend_walkable_place_names(
     limit: int,
     category_hint: str | None = None,
 ) -> list[str]:
-    """Use OpenAI to produce best-walkable-place names, fallback to curated list."""
+    """Use OpenAI to produce best-walkable-place names."""
 
     if settings.openai_api_key:
         prompt = (
@@ -93,11 +77,9 @@ async def recommend_walkable_place_names(
             if places:
                 return places[:limit]
         except Exception as exc:
-            logger.warning("LLM curation failed, using fallback list: %s", exc)
+            logger.warning("LLM curation failed; returning no curated names: %s", exc)
 
-    if city.lower().startswith("madrid"):
-        return MADRID_FALLBACK[:limit]
-    return MADRID_FALLBACK[: min(limit, 8)]
+    return []
 
 
 async def geocode_place(name: str, city: str) -> tuple[float, float] | None:

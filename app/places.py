@@ -135,7 +135,18 @@ async def _curated_walkable_search(
         )
         if len(places) >= limit:
             break
-    return places
+    if places:
+        return places
+
+    # Final safety net: if LLM/geocoding pipeline is unavailable, fall back to
+    # Overpass so we still return a workable route.
+    logger.warning(
+        "Curated walkable search returned no results for city=%s category=%s; "
+        "falling back to Overpass.",
+        city,
+        category,
+    )
+    return await _overpass_search(category, lat, lng, radius_m, limit=limit)
 
 
 async def _overpass_search(
