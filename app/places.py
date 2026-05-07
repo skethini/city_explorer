@@ -110,7 +110,15 @@ async def _overpass_search(
 
     try:
         async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.post(settings.overpass_url, data={"data": body})
+            resp = await client.post(
+                settings.overpass_url,
+                data={"data": body},
+                headers={
+                    # Overpass rejects some generic client signatures with 406.
+                    "User-Agent": "city-explorer/0.1 (+https://github.com/skethini/city_explorer)",
+                    "Accept": "application/json",
+                },
+            )
             resp.raise_for_status()
             payload = resp.json()
     except Exception as exc:
