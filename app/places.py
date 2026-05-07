@@ -129,6 +129,7 @@ async def _curated_walkable_search(
                 category=category,
                 rating=None,
                 popularity=popularity,
+                is_anchor=idx < 3,
                 address=None,
                 source="osm",
             )

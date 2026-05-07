@@ -77,6 +77,15 @@ def test_select_places_respects_max_stops_and_dedupes() -> None:
     assert names.count("Bangkok Bistro") == 1
 
 
+def test_select_places_prioritizes_anchor_attractions() -> None:
+    intent = IntentPlan(max_stops=2, free_slots=2, slots=[])
+    anchor = make_place("Plaza Mayor", 0.0, 0.01, popularity=0.3)
+    anchor = anchor.model_copy(update={"id": "anchor-1", "is_anchor": True})
+    non_anchor = make_place("Other Spot", 0.0, 0.001, popularity=0.95)
+    chosen = select_places(intent, {"free": [non_anchor, anchor]}, origin=(0.0, 0.0))
+    assert chosen[0].name == "Plaza Mayor"
+
+
 def test_order_handles_empty_input() -> None:
     assert order_stops((1.0, 2.0), []) == []
 

@@ -101,3 +101,29 @@ async def geocode_place(name: str, city: str) -> tuple[float, float] | None:
     except Exception as exc:
         logger.warning("Failed to geocode '%s': %s", name, exc)
         return None
+
+
+async def geocode_city_center(city: str) -> tuple[float, float] | None:
+    """Resolve a city name to a usable center coordinate."""
+
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(
+                NOMINATIM_SEARCH,
+                params={
+                    "q": city,
+                    "format": "jsonv2",
+                    "limit": 1,
+                    "featuretype": "city",
+                },
+                headers={"User-Agent": NOMINATIM_UA},
+            )
+            resp.raise_for_status()
+            rows = resp.json()
+        if not rows:
+            return None
+        row = rows[0]
+        return float(row["lat"]), float(row["lon"])
+    except Exception as exc:
+        logger.warning("Failed to geocode city '%s': %s", city, exc)
+        return None

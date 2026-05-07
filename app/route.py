@@ -88,8 +88,10 @@ def select_places(
         free_pool = candidates_by_key.get("free", [])
         remaining = max(0, intent.max_stops - len(chosen))
         wanted = min(intent.free_slots, remaining)
+        anchors = [p for p in free_pool if p.is_anchor]
+        non_anchors = [p for p in free_pool if not p.is_anchor]
         for _ in range(wanted):
-            place = pick(free_pool, None)
+            place = pick(anchors, None) or pick(non_anchors, None)
             if place is None:
                 break
             chosen.append(place)

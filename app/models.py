@@ -51,6 +51,7 @@ class Place(BaseModel):
     category: str
     rating: float | None = None
     popularity: float = 0.0
+    is_anchor: bool = False
     address: str | None = None
     source: Literal["osm", "foursquare"] = "osm"
     time_of_day: TimeOfDay = "any"
@@ -76,8 +77,9 @@ class Itinerary(BaseModel):
 
 class PlanRequest(BaseModel):
     query: str
-    lat: float
-    lng: float
+    city: str | None = None
+    lat: float | None = None
+    lng: float | None = None
     radius_m: int | None = None
     mode: TravelMode | None = None
 

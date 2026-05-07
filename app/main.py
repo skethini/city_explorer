@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .gmaps import build_gmaps_urls
@@ -17,6 +18,15 @@ logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="City Explorer", version="0.1.0")
 sessions = SessionStore()
+
+# Allow browser clients (Next.js/Vercel/local dev) to call this API.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/health")

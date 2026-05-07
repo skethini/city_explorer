@@ -39,7 +39,7 @@ curl -X POST http://localhost:8000/plan \
 
 | Method | Path      | Body                                                      |
 | ------ | --------- | --------------------------------------------------------- |
-| POST   | `/plan`   | `{ query, lat, lng, radius_m?, mode? }`                   |
+| POST   | `/plan`   | `{ query, city? (or lat+lng), radius_m?, mode? }`         |
 | POST   | `/refine` | `{ session_id, instruction }`                             |
 | GET    | `/health` | —                                                         |
 
@@ -52,6 +52,19 @@ Step-by-step recreate guides live in [`shortcuts/`](shortcuts/):
 
 - [`shortcuts/Plan-City-Tour.md`](shortcuts/Plan-City-Tour.md)
 - [`shortcuts/Refine-City-Tour.md`](shortcuts/Refine-City-Tour.md)
+
+## Web Interface (shareable)
+
+A shareable web MVP lives in [`web/`](web/). It calls this backend's
+`/plan` and `/refine` endpoints and displays `itinerary_text`, stops, and
+Google Maps launch links.
+
+```bash
+cd web
+npm install
+cp .env.example .env.local
+npm run dev
+```
 
 ## Tests
 

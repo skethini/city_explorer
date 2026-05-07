@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 
+from .curation import geocode_city_center
 from .llm import parse_intent, refine_intent
 from .models import IntentPlan, Itinerary, Place, PlanRequest
 from .places import gather_candidates
@@ -24,9 +25,12 @@ async def build_itinerary(req: PlanRequest) -> tuple[Itinerary, IntentPlan]:
         intent = intent.model_copy(update={"travel_mode": req.mode})
     if req.radius_m is not None:
         intent = intent.model_copy(update={"radius_m": req.radius_m})
+    else:
+        intent = intent.model_copy(update={"radius_m": _infer_radius_m(intent)})
     intent = _fit_stops_to_available_time(intent)
 
-    return await _itinerary_from_intent(intent, (req.lat, req.lng), req.query)
+    origin = await _resolve_origin(req)
+    return await _itinerary_from_intent(intent, origin, req.query)
 
 
 async def refine_itinerary(
@@ -138,3 +142,29 @@ def _estimate_visit_duration_s(stops: list[Place]) -> float:
         category = stop.category
         total_minutes += category_minutes.get(category, 55)
     return float(total_minutes * 60)
+
+
+async def _resolve_origin(req: PlanRequest) -> tuple[float, float]:
+    if req.lat is not None and req.lng is not None:
+        return req.lat, req.lng
+    if req.city:
+        coords = await geocode_city_center(req.city)
+        if coords is not None:
+            return coords
+        raise ValueError(f"Could not resolve city '{req.city}' to coordinates.")
+    raise ValueError("Provide either `city` or both `lat` and `lng`.")
+
+
+def _infer_radius_m(intent: IntentPlan) -> int:
+    if intent.available_minutes is None:
+        return 8000 if intent.travel_mode == "walking" else 12000
+    speed_m_per_min = {
+        "walking": 80,
+        "bicycling": 250,
+        "driving": 500,
+        "transit": 350,
+    }.get(intent.travel_mode, 80)
+    # Keep the search area smaller than total potential travel distance so
+    # selected stops remain reasonably clusterable in the available time.
+    inferred = int(intent.available_minutes * speed_m_per_min * 0.35)
+    return max(2500, min(30000, inferred))
