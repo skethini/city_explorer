@@ -15,7 +15,9 @@ from typing import Any
 import httpx
 
 from .config import settings
+from .curation import geocode_place, infer_city_name, recommend_walkable_place_names
 from .models import Place, Slot
+from .route import haversine_m
 
 logger = logging.getLogger(__name__)
 
@@ -58,25 +60,82 @@ async def find_candidates_for_slot(
     lng: float,
     radius_m: int,
     *,
+    query: str,
     limit: int = 10,
 ) -> list[Place]:
     """Resolve a single intent slot into a ranked list of candidate places."""
 
     if slot.category in _LEISURE_CATEGORIES or slot.category in {"attraction", "historic"}:
-        return await _overpass_search(slot.category, lat, lng, radius_m, limit=limit)
+        return await _curated_walkable_search(
+            query=query,
+            category=slot.category,
+            lat=lat,
+            lng=lng,
+            radius_m=radius_m,
+            limit=limit,
+        )
     return await _foursquare_search(slot, lat, lng, radius_m, limit=limit)
 
 
 async def find_top_attractions(
+    query: str,
     lat: float,
     lng: float,
     radius_m: int,
     *,
     limit: int = 12,
 ) -> list[Place]:
-    """Generic top tourist-attraction list for `free_slots`."""
+    """LLM-curated top walkable attractions for `free_slots`."""
+    return await _curated_walkable_search(
+        query=query,
+        category="attraction",
+        lat=lat,
+        lng=lng,
+        radius_m=radius_m,
+        limit=limit,
+    )
 
-    return await _overpass_search("attraction", lat, lng, radius_m, limit=limit)
+
+async def _curated_walkable_search(
+    *,
+    query: str,
+    category: str,
+    lat: float,
+    lng: float,
+    radius_m: int,
+    limit: int,
+) -> list[Place]:
+    city = await infer_city_name(lat, lng)
+    names = await recommend_walkable_place_names(
+        query=query, city=city, limit=max(limit * 2, 8), category_hint=category
+    )
+
+    places: list[Place] = []
+    for idx, name in enumerate(names):
+        coords = await geocode_place(name, city)
+        if coords is None:
+            continue
+        plat, plng = coords
+        distance = haversine_m((lat, lng), (plat, plng))
+        if distance > radius_m:
+            continue
+        popularity = max(0.1, 1.0 - (idx * 0.06))
+        places.append(
+            Place(
+                id=f"curated-{city.lower().replace(' ', '-')}-{idx}-{name.lower().replace(' ', '-')}",
+                name=name,
+                lat=plat,
+                lng=plng,
+                category=category,
+                rating=None,
+                popularity=popularity,
+                address=None,
+                source="osm",
+            )
+        )
+        if len(places) >= limit:
+            break
+    return places
 
 
 async def _overpass_search(
@@ -267,6 +326,7 @@ async def _foursquare_search(
 
 async def gather_candidates(
     slots: list[Slot],
+    query: str,
     lat: float,
     lng: float,
     radius_m: int,
@@ -280,12 +340,14 @@ async def gather_candidates(
     for i, slot in enumerate(slots):
         key = f"slot:{i}:{slot.category}"
         tasks.append((key, asyncio.create_task(
-            find_candidates_for_slot(slot, lat, lng, radius_m, limit=per_slot_limit)
+            find_candidates_for_slot(slot, lat, lng, radius_m, query=query, limit=per_slot_limit)
         )))
     if free_slots > 0:
         tasks.append((
             "free",
-            asyncio.create_task(find_top_attractions(lat, lng, radius_m, limit=free_slots * 4)),
+            asyncio.create_task(
+                find_top_attractions(query, lat, lng, radius_m, limit=free_slots * 4)
+            ),
         ))
 
     results: dict[str, list[Place]] = {}

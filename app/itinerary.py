@@ -26,7 +26,7 @@ async def build_itinerary(req: PlanRequest) -> tuple[Itinerary, IntentPlan]:
         intent = intent.model_copy(update={"radius_m": req.radius_m})
     intent = _fit_stops_to_available_time(intent)
 
-    return await _itinerary_from_intent(intent, (req.lat, req.lng))
+    return await _itinerary_from_intent(intent, (req.lat, req.lng), req.query)
 
 
 async def refine_itinerary(
@@ -35,14 +35,15 @@ async def refine_itinerary(
     new_intent = await refine_intent(record.intent, record.itinerary, instruction)
     new_intent = _fit_stops_to_available_time(new_intent)
     origin = (record.itinerary.origin_lat, record.itinerary.origin_lng)
-    return await _itinerary_from_intent(new_intent, origin)
+    return await _itinerary_from_intent(new_intent, origin, instruction)
 
 
 async def _itinerary_from_intent(
-    intent: IntentPlan, origin: tuple[float, float]
+    intent: IntentPlan, origin: tuple[float, float], query: str
 ) -> tuple[Itinerary, IntentPlan]:
     candidates = await gather_candidates(
         intent.slots,
+        query,
         origin[0],
         origin[1],
         intent.radius_m,
