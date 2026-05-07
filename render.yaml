@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: city-explorer
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: FOURSQUARE_API_KEY
+        sync: false
+      - key: OVERPASS_URL
+        value: https://overpass-api.de/api/interpreter
+      - key: OSRM_URL
+        value: https://router.project-osrm.org
