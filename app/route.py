@@ -258,6 +258,9 @@ def assemble_itinerary(
     *,
     distance_m: float = 0.0,
     duration_s: float = 0.0,
+    estimated_visit_duration_s: float = 0.0,
+    estimated_total_duration_s: float = 0.0,
+    target_duration_s: float | None = None,
 ) -> Itinerary:
     return Itinerary(
         origin_lat=origin[0],
@@ -269,4 +272,7 @@ def assemble_itinerary(
         ],
         total_distance_m=distance_m,
         total_duration_s=duration_s,
+        estimated_visit_duration_s=estimated_visit_duration_s,
+        estimated_total_duration_s=estimated_total_duration_s,
+        target_duration_s=target_duration_s,
     )

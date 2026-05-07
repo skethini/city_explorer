@@ -47,3 +47,15 @@ def test_refine_drops_categories() -> None:
     cats = {s.category for s in refined.slots}
     assert "museum" not in cats
     assert "cafe" in cats
+
+
+def test_parse_time_window_sets_available_minutes() -> None:
+    plan = _heuristic_parse("I'm free from 9am to 9pm for a walking tour")
+    assert plan.available_minutes == 12 * 60
+    assert plan.max_stops >= 6
+
+
+def test_refine_updates_time_window() -> None:
+    base = _heuristic_parse("tourist attractions in madrid")
+    refined = _heuristic_refine(base, "actually I only have 10am-3pm")
+    assert refined.available_minutes == 5 * 60

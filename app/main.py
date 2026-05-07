@@ -36,6 +36,7 @@ async def plan(req: PlanRequest) -> PlanResponse:
     return PlanResponse(
         session_id=session_id,
         summary=summary,
+        itinerary_text=summary,
         itinerary=itinerary,
         gmaps_url=gmaps_urls[0],
         gmaps_urls=gmaps_urls,
@@ -57,6 +58,7 @@ async def refine(req: RefineRequest) -> PlanResponse:
     return PlanResponse(
         session_id=req.session_id,
         summary=summary,
+        itinerary_text=summary,
         itinerary=itinerary,
         gmaps_url=gmaps_urls[0],
         gmaps_urls=gmaps_urls,

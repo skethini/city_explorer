@@ -33,6 +33,12 @@ class IntentPlan(BaseModel):
         ge=0,
         description="Number of additional top-rated attractions to fill in.",
     )
+    available_minutes: int | None = Field(
+        default=None,
+        ge=30,
+        le=24 * 60,
+        description="User available time window in minutes, if specified.",
+    )
 
 
 class Place(BaseModel):
@@ -63,6 +69,9 @@ class Itinerary(BaseModel):
     stops: list[ItineraryStop]
     total_distance_m: float = 0.0
     total_duration_s: float = 0.0
+    estimated_visit_duration_s: float = 0.0
+    estimated_total_duration_s: float = 0.0
+    target_duration_s: float | None = None
 
 
 class PlanRequest(BaseModel):
@@ -81,6 +90,7 @@ class RefineRequest(BaseModel):
 class PlanResponse(BaseModel):
     session_id: str
     summary: str
+    itinerary_text: str
     itinerary: Itinerary
     gmaps_url: str
     gmaps_urls: list[str]

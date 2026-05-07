@@ -22,6 +22,7 @@ Return ONLY a JSON object with these keys:
   travel_mode: one of walking, driving, bicycling, transit (default walking)
   max_stops: integer 1..12 (default 6)
   radius_m:  integer 500..30000 (default 5000)
+  available_minutes: integer or null (e.g. 720 if user says 9am to 9pm)
   free_slots: integer >= 0, top-rated attractions to fill in besides explicit slots
   slots: array of objects with keys
     category:    short snake_case category (e.g. museum, park, viewpoint,
@@ -62,6 +63,11 @@ def _coerce_plan(payload: dict[str, Any]) -> IntentPlan:
         radius_m=int(payload.get("radius_m", 5000)),
         slots=slots,
         free_slots=int(payload.get("free_slots", 0)),
+        available_minutes=(
+            int(payload["available_minutes"])
+            if payload.get("available_minutes") is not None
+            else None
+        ),
     )
 
 
@@ -198,6 +204,11 @@ def _heuristic_parse(query: str) -> IntentPlan:
     m = re.search(r"(\d{1,2})\s+(?:stops|places|spots|attractions)", q)
     if m:
         max_stops = max(1, min(12, int(m.group(1))))
+    available_minutes = _parse_available_minutes(q)
+    if available_minutes is not None and not m:
+        # Rough fit: ~75 min per stop + ~15 min transfer when mostly walking.
+        suggested = max(2, min(12, round(available_minutes / 90)))
+        max_stops = suggested
 
     return IntentPlan(
         travel_mode=travel_mode,  # type: ignore[arg-type]
@@ -205,6 +216,7 @@ def _heuristic_parse(query: str) -> IntentPlan:
         radius_m=5000,
         slots=slots,
         free_slots=free_slots,
+        available_minutes=available_minutes,
     )
 
 
@@ -246,5 +258,36 @@ def _heuristic_refine(prior: IntentPlan, instruction: str) -> IntentPlan:
         new_intent.max_stops = max(1, new_intent.max_stops - 1)
     elif "more" in instr:
         new_intent.max_stops = min(12, new_intent.max_stops + 1)
+    minutes = _parse_available_minutes(instr)
+    if minutes is not None:
+        new_intent.available_minutes = minutes
 
     return new_intent
+
+
+def _parse_available_minutes(text: str) -> int | None:
+    """Parse simple ranges like `9am-9pm`, `from 10:30 am to 6 pm`."""
+
+    match = re.search(
+        r"(?:from\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\s*(?:-|to|until|till)\s*"
+        r"(\d{1,2})(?::(\d{2}))?\s*(am|pm)",
+        text,
+    )
+    if not match:
+        return None
+    sh, sm, sap, eh, em, eap = match.groups()
+    start = _to_minutes_24h(int(sh), int(sm or 0), sap)
+    end = _to_minutes_24h(int(eh), int(em or 0), eap)
+    if end <= start:
+        end += 24 * 60
+    minutes = end - start
+    if minutes < 30:
+        return None
+    return minutes
+
+
+def _to_minutes_24h(hour_12: int, minute: int, ampm: str) -> int:
+    hour = hour_12 % 12
+    if ampm == "pm":
+        hour += 12
+    return hour * 60 + minute
