@@ -59,7 +59,7 @@ async def recommend_walkable_place_names(
             f"Category hint: {category_hint or 'general attractions'}\n\n"
             "Return ONLY JSON: {\"places\": [\"name1\", \"name2\", ...]}.\n"
             f"Pick the best walkable, high-interest places in {city} for tourists. "
-            "Prefer central places and avoid duplicates."
+            "Prefer central places and avoid duplicates. Use English place names."
         )
         try:
             client = AsyncOpenAI(api_key=settings.openai_api_key)
@@ -90,7 +90,12 @@ async def geocode_place(name: str, city: str) -> tuple[float, float] | None:
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.get(
                 NOMINATIM_SEARCH,
-                params={"q": f"{name}, {city}", "format": "jsonv2", "limit": 1},
+                params={
+                    "q": f"{name}, {city}",
+                    "format": "jsonv2",
+                    "limit": 1,
+                    "accept-language": "en",
+                },
                 headers={"User-Agent": NOMINATIM_UA},
             )
             resp.raise_for_status()

@@ -127,6 +127,7 @@ async def _curated_walkable_search(
                 lat=plat,
                 lng=plng,
                 category=category,
+                description=_brief_description(category),
                 rating=None,
                 popularity=popularity,
                 is_anchor=idx < 3,
@@ -199,7 +200,7 @@ async def _overpass_search(
     places: list[Place] = []
     for el in payload.get("elements", []):
         tags = el.get("tags") or {}
-        name = tags.get("name") or tags.get("name:en")
+        name = tags.get("name:en") or tags.get("name")
         if not name:
             continue
         if el.get("type") == "node":
@@ -216,6 +217,9 @@ async def _overpass_search(
             lat=float(plat),
             lng=float(plng),
             category=tags.get("tourism") or tags.get("historic") or tags.get("leisure") or category,
+            description=_brief_description(
+                tags.get("tourism") or tags.get("historic") or tags.get("leisure") or category
+            ),
             rating=None,
             popularity=popularity,
             address=tags.get("addr:full") or _join_address(tags),
@@ -324,6 +328,7 @@ async def _foursquare_search(
                 lat=float(plat),
                 lng=float(plng),
                 category=slot.category,
+                description=_brief_description(slot.category),
                 rating=float(rating) if rating is not None else None,
                 popularity=popularity,
                 address=location.get("formatted_address"),
@@ -370,3 +375,20 @@ async def gather_candidates(
             logger.warning("Candidate fetch %s failed: %s", key, exc)
             results[key] = []
     return results
+
+
+def _brief_description(category: str) -> str:
+    descriptions = {
+        "museum": "A major museum with notable collections.",
+        "gallery": "An art-focused stop with strong local culture.",
+        "park": "A scenic urban green space ideal for a walk.",
+        "garden": "A calm garden area for a short break.",
+        "viewpoint": "A viewpoint with strong city photo opportunities.",
+        "historic": "A historic landmark tied to the city's past.",
+        "attraction": "A top local attraction often visited by travelers.",
+        "thai_restaurant": "A well-rated Thai restaurant for a sit-down meal.",
+        "restaurant": "A popular restaurant with strong local reviews.",
+        "cafe": "A coffee stop with quick seating and snacks.",
+        "takeout": "A budget-friendly takeaway option for a fast meal.",
+    }
+    return descriptions.get(category, "A noteworthy stop on your city route.")

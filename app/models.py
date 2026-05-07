@@ -49,6 +49,7 @@ class Place(BaseModel):
     lat: float
     lng: float
     category: str
+    description: str | None = None
     rating: float | None = None
     popularity: float = 0.0
     is_anchor: bool = False
@@ -73,6 +74,8 @@ class Itinerary(BaseModel):
     estimated_visit_duration_s: float = 0.0
     estimated_total_duration_s: float = 0.0
     target_duration_s: float | None = None
+    schedule_start_minute: int | None = None
+    schedule_end_minute: int | None = None
 
 
 class PlanRequest(BaseModel):
