@@ -108,18 +108,25 @@ async def geocode_city_center(city: str) -> tuple[float, float] | None:
 
     try:
         async with httpx.AsyncClient(timeout=15) as client:
-            resp = await client.get(
-                NOMINATIM_SEARCH,
-                params={
-                    "q": city,
-                    "format": "jsonv2",
-                    "limit": 1,
-                    "featuretype": "city",
-                },
-                headers={"User-Agent": NOMINATIM_UA},
-            )
-            resp.raise_for_status()
-            rows = resp.json()
+            # Nominatim can be strict with `featuretype=city`; use a couple of
+            # progressively looser queries so common inputs like "Madrid"
+            # resolve reliably.
+            query_variants = [
+                {"q": city, "format": "jsonv2", "limit": 1, "featuretype": "city"},
+                {"q": city, "format": "jsonv2", "limit": 1},
+                {"city": city, "format": "jsonv2", "limit": 1},
+            ]
+            rows: list[dict[str, Any]] = []
+            for params in query_variants:
+                resp = await client.get(
+                    NOMINATIM_SEARCH,
+                    params=params,
+                    headers={"User-Agent": NOMINATIM_UA},
+                )
+                resp.raise_for_status()
+                rows = resp.json()
+                if rows:
+                    break
         if not rows:
             return None
         row = rows[0]
