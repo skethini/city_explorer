@@ -25,6 +25,19 @@ logging.basicConfig(level=logging.INFO)
 app = FastAPI(title="City Explorer", version="0.1.0")
 sessions = SessionStore()
 
+
+@app.get("/")
+async def root() -> dict[str, str]:
+    """So the public host URL in a browser does not look broken (Render, Fly, etc.)."""
+
+    return {
+        "service": "City Explorer API",
+        "status": "running",
+        "health": "/health",
+        "docs": "/docs",
+        "plan": "POST /plan",
+    }
+
 # Allow browser clients (Next.js/Vercel/local dev) to call this API.
 app.add_middleware(
     CORSMiddleware,
