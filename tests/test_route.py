@@ -52,6 +52,36 @@ def test_order_respects_time_anchors() -> None:
     assert TIME_ORDER[ordered[0].time_of_day] <= TIME_ORDER[ordered[-1].time_of_day]
 
 
+def test_select_places_dedupes_same_name_different_ids() -> None:
+    """Curated-style ids differ per row; name-based dedupe still keeps one row."""
+
+    intent = IntentPlan(
+        max_stops=4,
+        free_slots=3,
+        slots=[Slot(category="restaurant", time_of_day="lunch")],
+    )
+    slot_dupes = [
+        make_place("Naan Stop", 0.0, 0.001, category="restaurant").model_copy(
+            update={"id": "curated-city-0-naan-stop"}
+        ),
+        make_place("Naan Stop", 0.0, 0.002, category="restaurant").model_copy(
+            update={"id": "curated-city-1-naan-stop"}
+        ),
+        make_place("Naan Stop", 0.0, 0.003, category="restaurant").model_copy(
+            update={"id": "curated-city-2-naan-stop"}
+        ),
+    ]
+    others = [
+        make_place("Park A", 0.0, 0.01, popularity=0.9),
+        make_place("Park B", 0.0, 0.02, popularity=0.85),
+        make_place("Park C", 0.0, 0.03, popularity=0.8),
+    ]
+    candidates = {"slot:0:restaurant": slot_dupes, "free": others}
+    chosen = select_places(intent, candidates, origin=(0.0, 0.0))
+    assert [p.name for p in chosen].count("Naan Stop") == 1
+    assert len(chosen) == 4
+
+
 def test_select_places_respects_max_stops_and_dedupes() -> None:
     intent = IntentPlan(
         max_stops=3,

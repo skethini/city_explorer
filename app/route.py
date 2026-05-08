@@ -44,6 +44,12 @@ def haversine_m(a: tuple[float, float], b: tuple[float, float]) -> float:
     return 2 * r * math.asin(math.sqrt(h))
 
 
+def normalize_place_label(name: str) -> str:
+    """Stable label so the same venue under different synthetic ids still dedupes."""
+
+    return " ".join(name.strip().casefold().split())
+
+
 def select_places(
     intent: IntentPlan,
     candidates_by_key: dict[str, list[Place]],
@@ -57,6 +63,7 @@ def select_places(
 
     chosen: list[Place] = []
     seen_ids: set[str] = set()
+    seen_labels: set[str] = set()
 
     def pick(candidates: Iterable[Place], slot: Slot | None) -> Place | None:
         ranked = sorted(
@@ -70,10 +77,14 @@ def select_places(
         for p in ranked:
             if p.id in seen_ids:
                 continue
+            label = normalize_place_label(p.name)
+            if label in seen_labels:
+                continue
             chosen_place = p.model_copy()
             if slot is not None:
                 chosen_place.time_of_day = slot.time_of_day
             seen_ids.add(p.id)
+            seen_labels.add(label)
             return chosen_place
         return None
 

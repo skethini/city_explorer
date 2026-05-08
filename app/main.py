@@ -8,9 +8,15 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
+from .curation import search_city_suggestions
 from .gmaps import build_gmaps_urls
-from .itinerary import build_itinerary, refine_itinerary, summarize_itinerary
-from .models import PlanRequest, PlanResponse, RefineRequest
+from .itinerary import (
+    build_itinerary,
+    itinerary_schedule_slots,
+    refine_itinerary,
+    summarize_itinerary,
+)
+from .models import CitySuggestion, PlanRequest, PlanResponse, RefineRequest
 from .sessions import SessionStore
 
 logger = logging.getLogger("city_explorer")
@@ -34,20 +40,34 @@ async def health() -> dict[str, str]:
     return {"status": "ok", "model": settings.openai_model}
 
 
+@app.get("/city-suggestions", response_model=list[CitySuggestion])
+async def city_suggestions(q: str = "", limit: int = 10) -> list[CitySuggestion]:
+    """Autocomplete cities for the web UI (disambiguates Paris TX vs Paris FR, etc.)."""
+
+    q = q.strip()
+    if len(q) < 2:
+        return []
+    return await search_city_suggestions(q, limit=min(max(limit, 1), 20))
+
+
 @app.post("/plan", response_model=PlanResponse)
 async def plan(req: PlanRequest) -> PlanResponse:
     try:
         itinerary, intent = await build_itinerary(req)
-    except ValueError as exc:
+    except (ValueError, RuntimeError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     summary = summarize_itinerary(itinerary)
+    schedule = itinerary_schedule_slots(itinerary)
     gmaps_urls = build_gmaps_urls(itinerary)
-    session_id = sessions.create(query=req.query, intent=intent, itinerary=itinerary)
+    session_id = sessions.create(
+        query=req.query, intent=intent, itinerary=itinerary, city=req.city
+    )
     return PlanResponse(
         session_id=session_id,
         summary=summary,
         itinerary_text=summary,
         itinerary=itinerary,
+        schedule=schedule,
         gmaps_url=gmaps_urls[0],
         gmaps_urls=gmaps_urls,
     )
@@ -60,9 +80,10 @@ async def refine(req: RefineRequest) -> PlanResponse:
         raise HTTPException(status_code=404, detail="Unknown session_id")
     try:
         itinerary, intent = await refine_itinerary(record, req.instruction)
-    except ValueError as exc:
+    except (ValueError, RuntimeError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     summary = summarize_itinerary(itinerary)
+    schedule = itinerary_schedule_slots(itinerary)
     gmaps_urls = build_gmaps_urls(itinerary)
     sessions.update(req.session_id, instruction=req.instruction, intent=intent, itinerary=itinerary)
     return PlanResponse(
@@ -70,6 +91,7 @@ async def refine(req: RefineRequest) -> PlanResponse:
         summary=summary,
         itinerary_text=summary,
         itinerary=itinerary,
+        schedule=schedule,
         gmaps_url=gmaps_urls[0],
         gmaps_urls=gmaps_urls,
     )

@@ -21,6 +21,7 @@ class SessionRecord:
     query: str
     intent: IntentPlan
     itinerary: Itinerary
+    city: str | None = None
     history: list[str] = field(default_factory=list)
     created_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
@@ -34,13 +35,21 @@ class SessionStore:
         self._lock = threading.Lock()
         self._ttl = ttl_seconds
 
-    def create(self, query: str, intent: IntentPlan, itinerary: Itinerary) -> str:
+    def create(
+        self,
+        query: str,
+        intent: IntentPlan,
+        itinerary: Itinerary,
+        *,
+        city: str | None = None,
+    ) -> str:
         session_id = uuid.uuid4().hex[:12]
         record = SessionRecord(
             session_id=session_id,
             query=query,
             intent=intent,
             itinerary=itinerary,
+            city=city,
             history=[query],
         )
         with self._lock:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from app.llm import _heuristic_parse, _heuristic_refine
+from app.llm import _enforce_instruction, _heuristic_parse, _heuristic_refine
 
 
 def test_parse_extracts_thai_lunch_and_cheap_takeout_dinner() -> None:
@@ -47,6 +47,28 @@ def test_refine_drops_categories() -> None:
     cats = {s.category for s in refined.slots}
     assert "museum" not in cats
     assert "cafe" in cats
+
+
+def test_refine_generic_addition_creates_attraction_slot() -> None:
+    base = _heuristic_parse("major tourist attractions")
+    refined = _heuristic_refine(base, "add Royal Palace and Plaza Mayor")
+    assert any(s.category == "attraction" for s in refined.slots)
+
+
+def test_enforce_instruction_adds_missing_requested_slot() -> None:
+    prior = _heuristic_parse("major tourist attractions")
+    llm_plan = prior.model_copy()
+    enforced = _enforce_instruction(llm_plan, prior, "Add a Thai lunch")
+    cats = {s.category for s in enforced.slots}
+    assert "thai_restaurant" in cats
+
+
+def test_enforce_instruction_preserves_capacity_for_additions() -> None:
+    prior = _heuristic_parse("major tourist attractions")
+    tiny_llm = prior.model_copy(update={"max_stops": 1, "free_slots": 0, "slots": []})
+    enforced = _enforce_instruction(tiny_llm, prior, "Add a Thai lunch")
+    assert enforced.max_stops >= prior.max_stops
+    assert enforced.free_slots >= 1
 
 
 def test_parse_time_window_sets_available_minutes() -> None:

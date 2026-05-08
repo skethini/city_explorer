@@ -54,6 +54,7 @@ class Place(BaseModel):
     popularity: float = 0.0
     is_anchor: bool = False
     address: str | None = None
+    image_url: str | None = None
     source: Literal["osm", "foursquare"] = "osm"
     time_of_day: TimeOfDay = "any"
 
@@ -92,10 +93,47 @@ class RefineRequest(BaseModel):
     instruction: str
 
 
+class CitySuggestion(BaseModel):
+    """One geocoded place the user can pick as their tour city."""
+
+    label: str
+    name: str
+    country: str | None = None
+    admin1: str | None = None
+    latitude: float
+    longitude: float
+
+
+class ScheduleSlot(BaseModel):
+    """One suggested time block for the day (half-hour rounded)."""
+
+    time_start: str
+    time_end: str
+    place_name: str
+
+
+class OpenAIDirectStop(BaseModel):
+    """One stop from the direct OpenAI tour planner before geocoding."""
+
+    name: str = Field(min_length=1, max_length=400)
+    time_of_day: TimeOfDay = "any"
+    category: str = Field(default="attraction", max_length=80)
+
+
+class OpenAIDirectPlan(BaseModel):
+    """Full JSON plan from the direct OpenAI tour planner."""
+
+    travel_mode: TravelMode = "walking"
+    available_minutes: int | None = Field(default=None, ge=15, le=24 * 60)
+    radius_m: int = Field(default=8000, ge=500, le=30000)
+    stops: list[OpenAIDirectStop] = Field(min_length=1)
+
+
 class PlanResponse(BaseModel):
     session_id: str
     summary: str
     itinerary_text: str
     itinerary: Itinerary
+    schedule: list[ScheduleSlot] = Field(default_factory=list)
     gmaps_url: str
     gmaps_urls: list[str]

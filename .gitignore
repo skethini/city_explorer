@@ -17,3 +17,6 @@ web/node_modules/
 web/.next/
 web/.vercel/
 web/.env.local
+
+# Agent debug NDJSON (session-scoped)
+logs/debug-*.log
