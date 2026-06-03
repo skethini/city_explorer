@@ -1,5 +1,4 @@
 <img width="689" height="1031" alt="Screenshot 2026-06-03 at 10 39 20 AM" src="https://github.com/user-attachments/assets/aca5eb0b-c19e-4ce7-b3b0-5b8de47570b0" />
-<img width="738" height="422" alt="Screenshot 2026-06-03 at 10 35 29 AM" src="https://github.com/user-attachments/assets/2ca513bc-51e7-4c8c-9702-b1650f32d877" />
 
 
 # City Explorer
