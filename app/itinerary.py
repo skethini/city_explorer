@@ -8,7 +8,7 @@ import re
 from .curation import geocode_city_center, geocode_place, infer_city_name
 from .llm import plan_direct_tour, refine_direct_tour
 from .models import IntentPlan, Itinerary, OpenAIDirectStop, Place, PlanRequest, ScheduleSlot
-from .places import _enrich_destination_profiles
+from .places import enrich_destination_profiles
 from .route import assemble_itinerary, compute_route_metrics, haversine_m, normalize_place_label
 from .sessions import SessionRecord
 
@@ -52,8 +52,6 @@ async def build_itinerary(req: PlanRequest) -> tuple[Itinerary, IntentPlan]:
         travel_mode=merged_mode,
         max_stops=len(places),
         radius_m=radius_m,
-        slots=[],
-        free_slots=0,
         available_minutes=available_minutes,
     )
     return await _itinerary_from_resolved_places(places, intent, origin, req.query)
@@ -96,8 +94,6 @@ async def refine_itinerary(
         travel_mode=direct.travel_mode,
         max_stops=len(places),
         radius_m=radius_m,
-        slots=[],
-        free_slots=0,
         available_minutes=available_minutes,
     )
     return await _itinerary_from_resolved_places(places, intent, origin, combined_query)
@@ -142,12 +138,11 @@ async def _geocode_direct_stops(
                 is_anchor=i < 3,
                 address=None,
                 image_url=None,
-                source="osm",
                 time_of_day=s.time_of_day,
             )
         )
     if out:
-        await _enrich_destination_profiles(out, city=city or None)
+        await enrich_destination_profiles(out, city=city or None)
     return out
 
 

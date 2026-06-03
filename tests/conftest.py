@@ -23,6 +23,5 @@ def make_place(
         category=category,
         rating=rating,
         popularity=popularity,
-        source="osm",
         time_of_day=time_of_day,
     )

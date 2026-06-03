@@ -1,8 +1,7 @@
 """Tiny in-memory session store keyed by `session_id`.
 
-Holds the last itinerary and the parsed `IntentPlan` for every active tour
-so that `/refine` can build on prior context without forcing the iOS
-Shortcut to ship the full state on each call.
+Holds the last itinerary and plan metadata for every active tour so `/refine`
+can build on prior context without forcing the client to resend full state.
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""Curated walkable attraction recommendations (LLM-first)."""
+"""Geocoding, city autocomplete, and stop enrichment helpers."""
 
 from __future__ import annotations
 
@@ -116,94 +116,6 @@ async def infer_city_name(lat: float, lng: float) -> str:
     except Exception as exc:
         logger.warning("Failed to reverse-geocode city: %s", exc)
         return ""
-
-
-_CURATOR_SYSTEM = """You are a senior walking-tour curator for international visitors.
-
-Your job is to name real, high-signal destinations someone would expect on a polished
-"highlights of the city" walk — not a scatter of minor OSM points.
-
-Prioritize (when relevant to the city and the user's request):
-- Major squares, royal palaces or seats of government, top museums and art museums,
-  iconic cathedrals or basilicas, famous parks and gardens, UNESCO or nationally
-  famous landmarks, historic gates or city walls, renowned markets.
-
-Avoid unless the user explicitly asks for them:
-- Small street statues, plaques, generic memorials to obscure figures,
-  standalone public artworks, neighborhood "hidden gem" monuments that are not
-  widely known outside the city.
-
-Use canonical English names (Wikipedia-style) when they exist; otherwise clear
-English exonyms. Prefer a sensible geographic spread in the city center and
-walking distance between stops when the user wants a walking tour.
-
-Return JSON only, no prose."""
-
-_FOOD_CURATOR_SYSTEM = """You are a dining editor helping visitors find standout
-places to eat in a city.
-
-Name real, bookable or walk-in restaurants, chef-led rooms, respected food halls,
-or other venues where the primary draw is eating—not museums, parks, monuments,
-or generic sightseeing unless the user explicitly asked for those too.
-
-Prefer venues that locals and travelers recognize for quality; include the
-neighborhood or a short disambiguator in each name when it helps geocoding
-(e.g. "Dishoom, Shoreditch, London").
-
-Return JSON only, no prose."""
-
-
-async def recommend_walkable_place_names(
-    query: str,
-    city: str,
-    *,
-    limit: int,
-    category_hint: str | None = None,
-) -> list[str]:
-    """Use OpenAI to produce best-walkable-place names."""
-
-    if settings.openai_api_key:
-        hint = category_hint or "general attractions"
-        food_extra = ""
-        if (category_hint or "").strip().lower() == "restaurant":
-            food_extra = (
-                "\n\nReturn only real dining venues (restaurants, food halls, notable "
-                "cafés)—no museums, parks, monuments, or generic sightseeing unless "
-                "the user asked for them."
-            )
-        prompt = (
-            f"User request: {query}\n"
-            f"City: {city}\n"
-            f"Category hint: {hint}\n\n"
-            f"Return ONLY JSON: {{\"places\": [\"name1\", \"name2\", ...]}} with at most "
-            f"{limit} entries.\n"
-            f"List the strongest walkable stops in {city} that fit the hint and the "
-            "user request. Order from most iconic or useful for a first-time visitor "
-            "first. No duplicates. Each name must be specific enough to geocode "
-            "(include a short disambiguator in the string if needed, e.g. "
-            '"Prado Museum, Madrid").'
-            f"{food_extra}"
-        )
-        try:
-            client = AsyncOpenAI(api_key=settings.openai_api_key)
-            resp = await client.chat.completions.create(
-                model=settings.openai_model,
-                messages=[
-                    {"role": "system", "content": _CURATOR_SYSTEM},
-                    {"role": "user", "content": prompt},
-                ],
-                response_format={"type": "json_object"},
-                temperature=0.2,
-            )
-            content = resp.choices[0].message.content or "{}"
-            payload: dict[str, Any] = json.loads(content)
-            places = [str(x).strip() for x in payload.get("places", []) if str(x).strip()]
-            if places:
-                return places[:limit]
-        except Exception as exc:
-            logger.warning("LLM curation failed; returning no curated names: %s", exc)
-
-    return []
 
 
 async def geocode_place(name: str, city: str) -> tuple[float, float] | None:

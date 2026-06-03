@@ -8,31 +8,14 @@ from pydantic import BaseModel, Field
 
 TravelMode = Literal["walking", "driving", "bicycling", "transit"]
 TimeOfDay = Literal["morning", "lunch", "afternoon", "dinner", "evening", "any"]
-PriceTier = Literal[1, 2, 3, 4]
-
-
-class Slot(BaseModel):
-    """A single desired stop, before we resolve it to a real place."""
-
-    category: str = Field(..., description="High-level category, e.g. 'museum', 'thai_restaurant'.")
-    must_include: list[str] = Field(default_factory=list, description="Required keywords.")
-    time_of_day: TimeOfDay = "any"
-    price_tier: PriceTier | None = None
-    notes: str | None = None
 
 
 class IntentPlan(BaseModel):
-    """Structured representation of a user's request."""
+    """Session metadata captured after a plan or refine (travel mode, radius, time budget)."""
 
     travel_mode: TravelMode = "walking"
     max_stops: int = Field(default=6, ge=1, le=12)
     radius_m: int = Field(default=5000, ge=500, le=30000)
-    slots: list[Slot] = Field(default_factory=list)
-    free_slots: int = Field(
-        default=0,
-        ge=0,
-        description="Number of additional top-rated attractions to fill in.",
-    )
     available_minutes: int | None = Field(
         default=None,
         ge=30,
@@ -55,7 +38,6 @@ class Place(BaseModel):
     is_anchor: bool = False
     address: str | None = None
     image_url: str | None = None
-    source: Literal["osm", "foursquare"] = "osm"
     time_of_day: TimeOfDay = "any"
 
 
