@@ -151,8 +151,8 @@ button.secondary {
   padding: 4px;
   text-decoration: none;
   border-radius: 16px;
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 45%, #fcd34d 100%);
-  box-shadow: 0 0 0 2px #f59e0b, 0 8px 28px rgba(245, 158, 11, 0.45);
+  background: linear-gradient(135deg, #c8f7e0 0%, #93e9be 55%, #7de0b0 100%);
+  box-shadow: 0 0 0 2px #6dd4a8, 0 8px 28px rgba(147, 233, 190, 0.55);
   animation: mapsCtaRing 2.4s ease-in-out infinite;
 }
 
@@ -163,23 +163,23 @@ button.secondary {
   letter-spacing: 0.03em;
   padding: 15px 18px;
   border-radius: 12px;
-  border: 2px solid #b45309;
-  color: #1a1a1a;
-  background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+  border: 2px solid #4ec995;
+  color: #0f3328;
+  background: linear-gradient(180deg, #aef0cf 0%, #93e9be 50%, #7de0b0 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    0 6px 20px rgba(217, 119, 6, 0.5);
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 6px 20px rgba(147, 233, 190, 0.55);
   animation: mapsCtaPulse 2.4s ease-in-out infinite;
 }
 
 .maps-cta-button:hover {
   transform: translateY(-2px);
-  filter: brightness(1.06);
-  border-color: #92400e;
+  filter: brightness(1.04);
+  border-color: #3db888;
 }
 
 .maps-cta-button:focus-visible {
-  outline: 3px solid #78350f;
+  outline: 3px solid #2a9d6e;
   outline-offset: 3px;
 }
 
@@ -336,23 +336,23 @@ button.secondary {
   0%,
   100% {
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.45),
-      0 6px 20px rgba(217, 119, 6, 0.45);
+      inset 0 1px 0 rgba(255, 255, 255, 0.5),
+      0 6px 20px rgba(147, 233, 190, 0.45);
   }
   50% {
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.55),
-      0 10px 28px rgba(217, 119, 6, 0.65);
+      inset 0 1px 0 rgba(255, 255, 255, 0.6),
+      0 10px 28px rgba(147, 233, 190, 0.7);
   }
 }
 
 @keyframes mapsCtaRing {
   0%,
   100% {
-    box-shadow: 0 0 0 2px #f59e0b, 0 8px 28px rgba(245, 158, 11, 0.4);
+    box-shadow: 0 0 0 2px #6dd4a8, 0 8px 28px rgba(147, 233, 190, 0.45);
   }
   50% {
-    box-shadow: 0 0 0 3px #ea580c, 0 12px 36px rgba(234, 88, 12, 0.55);
+    box-shadow: 0 0 0 3px #93e9be, 0 12px 36px rgba(147, 233, 190, 0.65);
   }
 }
 
